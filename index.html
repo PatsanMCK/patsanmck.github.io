@@ -425,43 +425,31 @@
       </div>
     </div>
   </main>
-
-  <!-- Live ScoreSaber API Fetcher -->
+  <!-- ScoreSaber Rank Loader (Powered by GitHub Actions) -->
   <script>
-    (async function fetchScoreSaberRanks() {
-      const playerId = "76561199105171243";
-      const apiUrl = `https://scoresaber.com/api/player/${playerId}/basic`;
+    (async function loadScoreSaberRanks() {
+      // Only fetch scoresaber.json when hosted on http/https (GitHub Pages)
+      if (!location.protocol.startsWith("http")) return;
 
-      // Try direct API first, then fallback to CORS proxies if the browser blocks cross-origin requests
-      const endpoints = [
-        apiUrl,
-        `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`
-      ];
+      try {
+        const response = await fetch(`./scoresaber.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
 
-      for (const url of endpoints) {
-        try {
-          const response = await fetch(url);
-          if (!response.ok) continue;
-          const data = await response.json();
-
-          if (data && data.rank) {
-            document.getElementById("global-rank").textContent = `#${data.rank.toLocaleString()}`;
-          }
-          if (data && data.countryRank) {
-            document.getElementById("country-rank").textContent = `#${data.countryRank.toLocaleString()}`;
-          }
-          if (data && data.pp) {
-            document.getElementById("scoresaber-card").title = 
-              `ScoreSaber: ${Number(data.pp).toLocaleString()}pp (Global #${data.rank} | ${data.country} #${data.countryRank})`;
-          }
-          break; // Stop once we get a successful response
-        } catch (err) {
-          // Silently try the next endpoint in the list
+        if (data && typeof data.rank === "number") {
+          document.getElementById("global-rank").textContent = `#${data.rank.toLocaleString()}`;
         }
+        if (data && typeof data.countryRank === "number") {
+          document.getElementById("country-rank").textContent = `#${data.countryRank.toLocaleString()}`;
+        }
+        if (data && data.pp) {
+          document.getElementById("scoresaber-card").title = 
+            `ScoreSaber: ${Number(data.pp).toLocaleString()}pp (Global #${data.rank} | ${data.country} #${data.countryRank})`;
+        }
+      } catch (e) {
+        // Silently use the ranks already baked into index.html by GitHub Actions
       }
     })();
   </script>
-
 </body>
 </html>
